@@ -2,8 +2,10 @@ name: AI Email Search
 on:
   push:
     paths:
-      - 'data/user_query.txt'  # Trigger when query file changes
-
+      - 'data/user_query.txt'  
+  workflow_dispatch:  
+  schedule:
+    - cron: '0 0 * * *'
 jobs:
   run-search:
     runs-on: ubuntu-latest

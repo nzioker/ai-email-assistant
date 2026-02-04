@@ -1,14 +1,21 @@
-// src/script.js
 // ============= CONFIGURATION =============
-// REPLACE with your GitHub username and repository name
-const GITHUB_USERNAME = 'nzioker';
+// REPLACE with your actual GitHub username and repository name
+const GITHUB_USERNAME = 'nzioker'; // e.g., 'nzioker'
 const REPO_NAME = 'ai-email-assistant';
-const BRANCH = 'main'; // or 'master'
+const BRANCH = 'main';
 
-// GitHub Personal Access Token (PAT)
-// IMPORTANT: Store this as a secret in GitHub Actions, NOT here in production.
-// For this demo prototype, we'll simulate the process.
+// IMPORTANT: For a PUBLIC portfolio demo, we can use a LIMITED approach.
+// We'll use the GitHub API without authentication for READ operations (fetching results).
+// For WRITE operations (posting queries), we'll use a GitHub Actions workflow dispatch.
+// This is more secure than embedding a token in frontend code.
 // =========================================
+
+// API Endpoints
+const API_BASE = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents`;
+const RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/${BRANCH}`;
+
+// Workflow file name (from your .github/workflows/ directory)
+const WORKFLOW_FILE = 'search.yml';
 
 // DOM Elements
 const queryInput = document.getElementById('queryInput');
@@ -49,7 +56,7 @@ queryInput.addEventListener('keypress', (e) => {
 });
 
 // ============= CORE FUNCTIONS =============
-function performSearch() {
+async function performSearch() {
     const query = queryInput.value.trim();
     
     if (!query) {
@@ -62,26 +69,98 @@ function performSearch() {
     resultsArea.innerHTML = '';
     
     // Show searching status
-    showStatus(`<i class="fas fa-cog fa-spin"></i> Searching for: "${query}"...`, 'info');
+    showStatus(`<i class="fas fa-cog fa-spin"></i> Writing query to repository and triggering search...`, 'info');
     
     // Disable button during search
     searchBtn.disabled = true;
     searchBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Processing...';
     
-    // Simulate API delay (Replace with real GitHub API calls)
-    setTimeout(() => {
-        // In the REAL implementation, here you would:
-        // 1. Write the query to data/user_query.txt via GitHub API
+    try {
+        // 1. Write the query to data/user_query.txt
+        await writeQueryToRepo(query);
+        
         // 2. Trigger the GitHub Actions workflow
-        // 3. Poll for results in data/search_results.json
+        await triggerWorkflow();
         
-        // For this demo, we'll use sample results
-        displayResults(sampleResults, query);
+        // 3. Poll for results (check every 3 seconds, max 60 seconds)
+        await pollForResults(query);
         
+    } catch (error) {
+        console.error('Search failed:', error);
+        showStatus(`Error: ${error.message}`, 'error');
+    } finally {
         // Re-enable button
         searchBtn.disabled = false;
         searchBtn.innerHTML = '<i class="fas fa-search"></i> Search Virtual Inbox';
-    }, 1500); // Simulate 1.5 second delay
+    }
+}
+
+async function writeQueryToRepo(query) {
+    // Encode the query for the file
+    const content = btoa(unescape(encodeURIComponent(query)));
+    
+    // First, get the current file SHA (required for update)
+    const fileInfo = await fetch(`${API_BASE}/data/user_query.txt`, {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+    }).then(r => r.ok ? r.json() : { sha: null });
+    
+    // Prepare the update request
+    const updateData = {
+        message: `docs: update search query [skip ci]`,
+        content: content,
+        sha: fileInfo.sha, // If sha is null, GitHub will create the file
+        branch: BRANCH
+    };
+    
+    // Note: This write operation requires authentication.
+    // For a public site, we need an alternative approach.
+    // For now, we'll simulate or use a backend proxy.
+    showStatus(`Query ready: "${query}" (Write requires auth setup)`, 'info');
+    // We'll implement a secure method in the next step
+    return Promise.resolve();
+}
+
+async function triggerWorkflow() {
+    // Instead of direct file write, we can trigger a workflow_dispatch event
+    // This requires a PAT with repo scope, which should NOT be in frontend code.
+    showStatus('Triggering search engine... (setup in progress)', 'info');
+    // We'll set up a separate endpoint or use a different trigger method
+    return Promise.resolve();
+}
+
+async function pollForResults(query) {
+    showStatus(`<i class="fas fa-cog fa-spin"></i> AI model is searching your emails...`, 'info');
+    
+    let attempts = 0;
+    const maxAttempts = 20; // 20 attempts * 3 seconds = 60 seconds total
+    
+    while (attempts < maxAttempts) {
+        attempts++;
+        
+        try {
+            // Fetch the latest results file
+            const response = await fetch(`${RAW_BASE}/data/search_results.json?t=${Date.now()}`);
+            
+            if (response.ok) {
+                const results = await response.json();
+                
+                // Check if results are fresh (could add timestamp check)
+                if (results && results.length > 0) {
+                    displayResults(results, query);
+                    showStatus(`✅ Search completed! Found ${results.length} emails.`, 'success');
+                    return;
+                }
+            }
+        } catch (error) {
+            console.log(`Attempt ${attempts} failed:`, error.message);
+        }
+        
+        // Wait 3 seconds before trying again
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        showStatus(`<i class="fas fa-cog fa-spin"></i> Still searching... (${attempts * 3}s)`, 'info');
+    }
+    
+    throw new Error('Search timeout. The AI engine might be taking longer than expected.');
 }
 
 function displayResults(results, query) {
