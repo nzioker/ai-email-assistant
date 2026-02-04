@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Assistant - Portfolio Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-robot"></i> AI Email Assistant</h1>
+            <p class="subtitle">A semantic search engine that finds emails by understanding meaning, not just keywords.</p>
+            <p class="tech">Built with Sentence Transformers, FAISS, & GitHub Actions</p>
+        </header>
+
+        <main>
+            <div class="search-box">
+                <input type="text" id="queryInput" 
+                       placeholder="Describe the email you're looking for... e.g., 'budget meeting notes from last week'">
+                <button id="searchBtn">
+                    <i class="fas fa-search"></i> Search Virtual Inbox
+                </button>
+                <p class="hint">
+                    <i class="fas fa-lightbulb"></i> This demo searches a sample of 100+ real business emails.
+                </p>
+            </div>
+
+            <div class="status" id="statusArea">
+                <!-- Status messages will appear here -->
+            </div>
+
+            <div class="results" id="resultsArea">
+                <!-- Search results will be inserted here -->
+            </div>
+
+            <div class="about">
+                <h3><i class="fas fa-code"></i> How This Works</h3>
+                <p>1. Your query is sent securely to this project's GitHub repository.</p>
+                <p>2. A GitHub Action triggers, running the Python ML model to find the most semantically similar emails.</p>
+                <p>3. The results are fetched and displayed here. <strong>Note:</strong> The initial search takes ~30 seconds as the Action starts.</p>
+                <p><a href="https://github.com/your-username/ai-email-assistant" target="_blank">
+                    <i class="fab fa-github"></i> View the complete source code on GitHub
+                </a></p>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

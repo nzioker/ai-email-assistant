@@ -1,0 +1,38 @@
+name: AI Email Search
+on:
+  push:
+    paths:
+      - 'data/user_query.txt'  # Trigger when query file changes
+
+jobs:
+  run-search:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed to commit results back
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r ml_core/requirements.txt
+          pip install "numpy<2"  # Ensure NumPy compatibility
+      
+      - name: Run AI Search Engine
+        run: python ml_core/search_engine.py
+      
+      - name: Commit and push results
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add data/search_results.json
+          git commit -m "docs: update search results [skip ci]" || echo "No changes to commit"
+          git push
